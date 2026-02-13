@@ -1,0 +1,61 @@
+package com.telegrammer.shared.repository
+
+import com.telegrammer.shared.api.AuthApi
+import com.telegrammer.shared.model.AuthState
+import com.telegrammer.shared.platform.SecureStorage
+import com.telegrammer.shared.platform.StorageKeys
+
+class AuthRepository(
+    private val authApi: AuthApi,
+    private val storage: SecureStorage
+) {
+    fun isLoggedIn(): Boolean =
+        storage.getString(StorageKeys.ACCESS_TOKEN) != null
+
+    fun getUserId(): String? =
+        storage.getString(StorageKeys.USER_ID)
+
+    fun getAccessToken(): String? =
+        storage.getString(StorageKeys.ACCESS_TOKEN)
+
+    suspend fun requestOtp(phoneNumber: String): AuthState {
+        val result = authApi.requestOtp(phoneNumber)
+        return if (result.isSuccess) {
+            AuthState.OtpSent(phoneNumber)
+        } else {
+            AuthState.Error(result.exceptionOrNull()?.message ?: "Failed to send OTP")
+        }
+    }
+
+    suspend fun verifyOtp(phoneNumber: String, code: String): AuthState {
+        val result = authApi.verifyOtp(phoneNumber, code)
+        return result.fold(
+            onSuccess = { tokens ->
+                storage.putString(StorageKeys.ACCESS_TOKEN, tokens.accessToken)
+                storage.putString(StorageKeys.REFRESH_TOKEN, tokens.refreshToken)
+                storage.putString(StorageKeys.USER_ID, tokens.userId)
+                AuthState.Authenticated(tokens.userId)
+            },
+            onFailure = { e ->
+                AuthState.Error(e.message ?: "Verification failed")
+            }
+        )
+    }
+
+    suspend fun refreshToken(): Boolean {
+        val refreshToken = storage.getString(StorageKeys.REFRESH_TOKEN) ?: return false
+        val result = authApi.refresh(refreshToken)
+        return result.fold(
+            onSuccess = { tokens ->
+                storage.putString(StorageKeys.ACCESS_TOKEN, tokens.accessToken)
+                storage.putString(StorageKeys.REFRESH_TOKEN, tokens.refreshToken)
+                true
+            },
+            onFailure = { false }
+        )
+    }
+
+    fun logout() {
+        storage.clear()
+    }
+}

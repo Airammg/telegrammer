@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS PendingMessageEntity (
+    localId TEXT NOT NULL PRIMARY KEY,
+    chatId TEXT NOT NULL,
+    recipientId TEXT NOT NULL,
+    plaintext TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM PendingMessageEntity
+ORDER BY createdAt ASC;
+
+selectByChatId:
+SELECT * FROM PendingMessageEntity
+WHERE chatId = ?
+ORDER BY createdAt ASC;
+
+insert:
+INSERT INTO PendingMessageEntity(localId, chatId, recipientId, plaintext, createdAt)
+VALUES (?, ?, ?, ?, ?);
+
+delete:
+DELETE FROM PendingMessageEntity WHERE localId = ?;

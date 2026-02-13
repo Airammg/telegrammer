@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS ConversationEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    otherUserId TEXT NOT NULL,
+    otherUserName TEXT NOT NULL DEFAULT '',
+    otherUserPhone TEXT NOT NULL DEFAULT '',
+    otherUserAvatarUrl TEXT,
+    lastMessageAt INTEGER,
+    lastMessagePreview TEXT,
+    unreadCount INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_last ON ConversationEntity(lastMessageAt DESC);
+
+selectAll:
+SELECT * FROM ConversationEntity
+ORDER BY lastMessageAt DESC;
+
+selectById:
+SELECT * FROM ConversationEntity WHERE id = ?;
+
+upsert:
+INSERT OR REPLACE INTO ConversationEntity(
+    id, otherUserId, otherUserName, otherUserPhone, otherUserAvatarUrl,
+    lastMessageAt, lastMessagePreview, unreadCount, createdAt
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateLastMessage:
+UPDATE ConversationEntity
+SET lastMessageAt = ?, lastMessagePreview = ?
+WHERE id = ?;
+
+incrementUnread:
+UPDATE ConversationEntity
+SET unreadCount = unreadCount + 1
+WHERE id = ?;
+
+clearUnread:
+UPDATE ConversationEntity
+SET unreadCount = 0
+WHERE id = ?;
