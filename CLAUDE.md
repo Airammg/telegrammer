@@ -21,7 +21,7 @@ cd server && docker compose up -d
 
 - `server/src/main/kotlin/com/telegrammer/server/` — Backend (routes, repositories, models, WebSocket)
 - `shared/src/commonMain/kotlin/com/telegrammer/shared/` — KMP shared code
-  - `api/` — HTTP API clients (AuthApi, ContactApi, ChatApi, KeyApi)
+  - `api/` — HTTP API clients (AuthApi, ContactApi, ChatApi, KeyApi, UserApi)
   - `crypto/` — E2E encryption (KeyManager, X3DH, Ratchet, CryptoSession)
   - `ws/` — WebSocket client (ChatSocket, WsMessage types)
   - `repository/` — Data layer (AuthRepository, ChatRepository, ContactRepository)
@@ -47,27 +47,27 @@ Server IP is hardcoded in two files (update when network changes):
 
 ## Implementation Roadmap
 
-Current progress: Steps 1-4 complete, step 5 partially complete.
+Steps 1-6 complete. Next up: step 7.
 
-### Step 1 — Initialize libsodium on app startup (NEXT)
-Call `LibsodiumInitializer.initialize()` in `TelegrammerApp.onCreate()` so crypto primitives are available.
+### Step 1 — Initialize libsodium on app startup — DONE
+`LibsodiumInitializer.initialize()` called in `TelegrammerApp.onCreate()`.
 
-### Step 2 — Generate identity keys on registration
-After OTP verification, generate identity key pair, signed prekey, and batch of one-time prekeys via `KeyManager`.
+### Step 2 — Generate identity keys on registration — DONE
+After OTP verification, `AuthRepository.verifyOtp()` generates identity key pair, signed prekey, and one-time prekeys via `KeyManager`. Also generates on app startup if logged in but no keys exist.
 
-### Step 3 — Upload prekey bundle to server
-Call `POST /keys/bundle` after key generation so other users can establish E2E sessions.
+### Step 3 — Upload prekey bundle to server — DONE
+Bundle uploaded via `POST /keys/bundle` after key generation. Test user bundle uploaded via pynacl script.
 
-### Step 4 — Wire up the full encrypt/send flow
-`CryptoSession.encrypt()` fetches recipient's bundle, performs X3DH key agreement, initializes Double Ratchet, and encrypts the message. Fix the crash on send.
+### Step 4 — Wire up the full encrypt/send flow — DONE
+`CryptoSession.encrypt()` fetches recipient's bundle, does X3DH, initializes Double Ratchet, encrypts with XChaCha20-Poly1305. Fixed `@Serializable` on `MessageHeader`. Added error handling in `ChatViewModel`.
 
-### Step 5 — Test end-to-end messaging
-Send a message between the phone and a test user (simulated via curl/WebSocket on the server side). Verify encrypt/decrypt round-trip works.
+### Step 5 — Test end-to-end messaging — DONE
+Encrypted messages sent successfully from phone to test user. Send-side verified working.
 
-### Step 6 — Conversation list refresh
-Update conversation list in real-time when messages arrive via WebSocket.
+### Step 6 — Conversation list refresh — DONE
+Added `syncConversations()` to `ChatRepository` — fetches chats from server, resolves user info via `UserApi`, upserts into local DB. `sendMessage()` now calls `createOrGetConversation()` to ensure the row exists before updating. `ConversationListViewModel` syncs on init.
 
-### Step 7 — Delivery/read receipts UI
+### Step 7 — Delivery/read receipts UI (NEXT)
 Show check marks on messages (single = sent, double = delivered, blue = read).
 
 ### Step 8 — Real SMS integration
@@ -81,6 +81,17 @@ Build the iOS UI layer on top of the existing KMP shared module.
 
 ### Step 11 — Docker production deployment
 Containerize server + MongoDB with proper config, TLS, and environment variables.
+
+## Testing Setup
+
+To test messaging, a second user is needed. Create one via curl:
+```bash
+# Request OTP
+curl -s http://localhost:8080/auth/request-otp -H "Content-Type: application/json" -d '{"phoneNumber": "+14155551234"}'
+# Check server console for OTP code, then verify
+curl -s http://localhost:8080/auth/verify-otp -H "Content-Type: application/json" -d '{"phoneNumber": "+14155551234", "code": "<OTP>"}'
+```
+The test user needs a prekey bundle uploaded — use pynacl to generate Ed25519 identity + X25519 prekeys and POST to `/keys/bundle`.
 
 ## Common Issues
 

@@ -114,22 +114,24 @@ Messages use `{ "type": "...", "payload": {...} }` envelope format.
 ### Working
 - Server: full REST API, WebSocket, MongoDB, JWT auth, OTP flow
 - Android: auth flow (phone + OTP), conversation list, contacts search, chat UI
-- WebSocket: real-time connection, reconnection
+- WebSocket: real-time connection, auto-reconnect
+- E2E encryption: libsodium init, key generation, bundle upload, X3DH + Double Ratchet encrypt/send
+- Conversation list: syncs from server, updates on sent messages
 
 ### In Progress
-- E2E encryption: crypto primitives implemented, needs key upload/exchange integration
+- Delivery/read receipts UI
 
 ## Roadmap
 
 | # | Step | Status |
 |---|------|--------|
-| 1 | Initialize libsodium on app startup | Pending |
-| 2 | Generate identity keys on registration | Pending |
-| 3 | Upload prekey bundle to server | Pending |
-| 4 | Wire up full encrypt/send flow (fix send crash) | Pending |
-| 5 | Test end-to-end encrypted messaging | Pending |
-| 6 | Conversation list real-time refresh | Pending |
-| 7 | Delivery/read receipts UI (check marks) | Pending |
+| 1 | Initialize libsodium on app startup | Done |
+| 2 | Generate identity keys on registration | Done |
+| 3 | Upload prekey bundle to server | Done |
+| 4 | Wire up full encrypt/send flow | Done |
+| 5 | Test end-to-end encrypted messaging | Done |
+| 6 | Conversation list real-time refresh | Done |
+| 7 | Delivery/read receipts UI (check marks) | **Next** |
 | 8 | Real SMS integration (Twilio) | Pending |
 | 9 | Profile editing UI | Pending |
 | 10 | iOS app | Pending |
