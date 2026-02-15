@@ -118,11 +118,19 @@ Messages use `{ "type": "...", "payload": {...} }` envelope format.
 
 ### In Progress
 - E2E encryption: crypto primitives implemented, needs key upload/exchange integration
-- Delivery/read receipts UI
-- Conversation list updates from WebSocket events
 
-### Not Started
-- iOS app
-- Docker production deployment
-- Profile editing UI
-- Media messages
+## Roadmap
+
+| # | Step | Status |
+|---|------|--------|
+| 1 | Initialize libsodium on app startup | Pending |
+| 2 | Generate identity keys on registration | Pending |
+| 3 | Upload prekey bundle to server | Pending |
+| 4 | Wire up full encrypt/send flow (fix send crash) | Pending |
+| 5 | Test end-to-end encrypted messaging | Pending |
+| 6 | Conversation list real-time refresh | Pending |
+| 7 | Delivery/read receipts UI (check marks) | Pending |
+| 8 | Real SMS integration (Twilio) | Pending |
+| 9 | Profile editing UI | Pending |
+| 10 | iOS app | Pending |
+| 11 | Docker production deployment | Pending |

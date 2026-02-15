@@ -45,6 +45,43 @@ Server IP is hardcoded in two files (update when network changes):
 - `shared/.../api/ApiClient.kt` — `apiHost` parameter
 - `shared/.../ws/ChatSocket.kt` — `wsHost` parameter
 
+## Implementation Roadmap
+
+Current progress: Steps 1-4 complete, step 5 partially complete.
+
+### Step 1 — Initialize libsodium on app startup (NEXT)
+Call `LibsodiumInitializer.initialize()` in `TelegrammerApp.onCreate()` so crypto primitives are available.
+
+### Step 2 — Generate identity keys on registration
+After OTP verification, generate identity key pair, signed prekey, and batch of one-time prekeys via `KeyManager`.
+
+### Step 3 — Upload prekey bundle to server
+Call `POST /keys/bundle` after key generation so other users can establish E2E sessions.
+
+### Step 4 — Wire up the full encrypt/send flow
+`CryptoSession.encrypt()` fetches recipient's bundle, performs X3DH key agreement, initializes Double Ratchet, and encrypts the message. Fix the crash on send.
+
+### Step 5 — Test end-to-end messaging
+Send a message between the phone and a test user (simulated via curl/WebSocket on the server side). Verify encrypt/decrypt round-trip works.
+
+### Step 6 — Conversation list refresh
+Update conversation list in real-time when messages arrive via WebSocket.
+
+### Step 7 — Delivery/read receipts UI
+Show check marks on messages (single = sent, double = delivered, blue = read).
+
+### Step 8 — Real SMS integration
+Replace `ConsoleSmsGateway` with a real SMS provider (e.g. Twilio). The `SmsGateway` interface is already in place — just needs a new implementation.
+
+### Step 9 — Profile editing UI
+Add screen to edit display name and avatar.
+
+### Step 10 — iOS app
+Build the iOS UI layer on top of the existing KMP shared module.
+
+### Step 11 — Docker production deployment
+Containerize server + MongoDB with proper config, TLS, and environment variables.
+
 ## Common Issues
 
 - **Gradle needs JDK 17**: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`
