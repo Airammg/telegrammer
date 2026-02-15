@@ -76,15 +76,15 @@ class Ratchet {
             state.sendChainKey = chainKey
 
             val nonce = com.ionspin.kotlin.crypto.util.LibsodiumRandom.bufDeterministic(
-                NONCE_SIZE.toUInt(),
+                NONCE_SIZE,
                 messageKey.copyOfRange(0, 32).toUByteArray()
             ).toByteArray()
 
             val ciphertext = AuthenticatedEncryptionWithAssociatedData.xChaCha20Poly1305IetfEncrypt(
-                message = plaintext.toUByteArray(),
-                associatedData = "".encodeToByteArray().toUByteArray(),
-                nonce = nonce.toUByteArray(),
-                key = messageKey.toUByteArray()
+                plaintext.toUByteArray(),
+                "".encodeToByteArray().toUByteArray(),
+                nonce.toUByteArray(),
+                messageKey.toUByteArray()
             ).toByteArray()
 
             val header = MessageHeader(
@@ -117,10 +117,10 @@ class Ratchet {
             val ciphertext = Base64.decode(message.ciphertext)
 
             return AuthenticatedEncryptionWithAssociatedData.xChaCha20Poly1305IetfDecrypt(
-                ciphertext = ciphertext.toUByteArray(),
-                associatedData = "".encodeToByteArray().toUByteArray(),
-                nonce = nonce.toUByteArray(),
-                key = messageKey.toUByteArray()
+                ciphertext.toUByteArray(),
+                "".encodeToByteArray().toUByteArray(),
+                nonce.toUByteArray(),
+                messageKey.toUByteArray()
             ).toByteArray()
         }
 

@@ -1,6 +1,7 @@
 package com.telegrammer.android.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,6 +17,7 @@ import com.telegrammer.android.ui.contacts.ContactsScreen
 import com.telegrammer.android.ui.contacts.ContactsViewModel
 import com.telegrammer.android.ui.conversations.ConversationListScreen
 import com.telegrammer.android.ui.conversations.ConversationListViewModel
+import kotlinx.coroutines.launch
 
 object Routes {
     const val PHONE_INPUT = "phone_input"
@@ -89,11 +91,18 @@ fun NavGraph(deps: AppDependencies) {
 
         composable(Routes.CONTACTS) {
             val viewModel = ContactsViewModel(deps.contactRepo)
+            val scope = rememberCoroutineScope()
             ContactsScreen(
                 viewModel = viewModel,
                 onContactClick = { userId ->
-                    // TODO: Create chat first, then navigate
-                    navController.popBackStack()
+                    scope.launch {
+                        val result = deps.chatApi.createChat(userId)
+                        result.onSuccess { chat ->
+                            navController.navigate(Routes.chat(chat.id, userId)) {
+                                popUpTo(Routes.CONVERSATIONS)
+                            }
+                        }
+                    }
                 },
                 onBack = { navController.popBackStack() }
             )

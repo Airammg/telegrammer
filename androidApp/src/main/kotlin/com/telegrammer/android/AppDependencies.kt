@@ -3,6 +3,7 @@ package com.telegrammer.android
 import android.content.Context
 import com.telegrammer.shared.api.ApiClient
 import com.telegrammer.shared.api.AuthApi
+import com.telegrammer.shared.api.ChatApi
 import com.telegrammer.shared.api.ContactApi
 import com.telegrammer.shared.api.KeyApi
 import com.telegrammer.shared.crypto.CryptoSession
@@ -28,6 +29,7 @@ class AppDependencies(context: Context) {
     val authApi = AuthApi(apiClient.http)
     val contactApi = ContactApi(apiClient.http)
     val keyApi = KeyApi(apiClient.http)
+    val chatApi = ChatApi(apiClient.http)
 
     // Crypto
     val keyManager = KeyManager(secureStorage)

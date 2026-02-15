@@ -13,7 +13,8 @@ import kotlinx.serialization.json.Json
 
 class ApiClient(
     private val tokenStore: SecureStorage,
-    baseUrl: String = "http://10.0.2.2:8080" // Android emulator -> host
+    private val apiHost: String = "192.168.1.144",
+    private val apiPort: Int = 8080
 ) {
     val json = Json {
         ignoreUnknownKeys = true
@@ -27,7 +28,11 @@ class ApiClient(
         install(WebSockets)
 
         defaultRequest {
-            url(baseUrl)
+            url {
+                protocol = URLProtocol.HTTP
+                host = apiHost
+                port = apiPort
+            }
             contentType(ContentType.Application.Json)
             tokenStore.getString(StorageKeys.ACCESS_TOKEN)?.let {
                 header(HttpHeaders.Authorization, "Bearer $it")

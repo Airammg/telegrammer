@@ -2,7 +2,7 @@ package com.telegrammer.server
 
 import com.telegrammer.server.auth.*
 import com.telegrammer.server.chat.ChatRepository
-import com.telegrammer.server.chat.ChatRoutes
+import com.telegrammer.server.chat.*
 import com.telegrammer.server.chat.MessageRepository
 import com.telegrammer.server.chat.chatRoutes
 import com.telegrammer.server.contact.ContactRepository
@@ -27,7 +27,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.serialization.json.Json
-import java.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -61,8 +61,8 @@ fun Application.module() {
     }
 
     install(WebSockets) {
-        pingPeriod = Duration.ofSeconds(30)
-        timeout = Duration.ofSeconds(15)
+        pingPeriod = 30.seconds
+        timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }

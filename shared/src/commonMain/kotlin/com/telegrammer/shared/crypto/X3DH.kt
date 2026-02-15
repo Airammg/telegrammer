@@ -25,13 +25,16 @@ class X3DH(private val keyManager: KeyManager) {
         val bobSignedPreKey = Base64.decode(bundle.signedPreKey.publicKey)
         val bobSignature = Base64.decode(bundle.signedPreKey.signature)
 
-        // Verify Bob's signed prekey
-        val isValid = Signature.verifyDetached(
-            bobSignature.toUByteArray(),
-            bobSignedPreKey.toUByteArray(),
-            bobIdentityKey.toUByteArray()
-        )
-        require(isValid) { "Invalid signed prekey signature" }
+        // Verify Bob's signed prekey (throws InvalidSignatureException on failure)
+        try {
+            Signature.verifyDetached(
+                bobSignature.toUByteArray(),
+                bobSignedPreKey.toUByteArray(),
+                bobIdentityKey.toUByteArray()
+            )
+        } catch (e: Exception) {
+            throw IllegalStateException("Invalid signed prekey signature", e)
+        }
 
         // Generate ephemeral key pair
         val ephemeralKeyPair = Box.keypair()
@@ -109,29 +112,19 @@ class X3DH(private val keyManager: KeyManager) {
         ).toByteArray()
 
     private fun ed25519PrivateToX25519(ed25519Private: ByteArray): ByteArray {
-        // libsodium: crypto_sign_ed25519_sk_to_curve25519
-        return com.ionspin.kotlin.crypto.util.LibsodiumUtil.sodiumBin2Hex(
-            ed25519Private.toUByteArray()
-        ).let {
-            // For simplicity, use first 32 bytes as X25519 scalar (clamped)
-            // In production, use proper conversion
-            val scalar = ed25519Private.copyOfRange(0, 32)
-            scalar[0] = (scalar[0].toInt() and 248).toByte()
-            scalar[31] = (scalar[31].toInt() and 127 or 64).toByte()
-            scalar
-        }
+        // Clamp the first 32 bytes of the Ed25519 secret key to produce an X25519 scalar
+        val scalar = ed25519Private.copyOfRange(0, 32)
+        scalar[0] = (scalar[0].toInt() and 248).toByte()
+        scalar[31] = (scalar[31].toInt() and 127 or 64).toByte()
+        return scalar
     }
 
     private fun ed25519PublicToX25519(ed25519Public: ByteArray): ByteArray {
-        // Simplified conversion — in production use crypto_sign_ed25519_pk_to_curve25519
-        // For now, this returns the input assuming keys are already X25519 format
-        // TODO: Use proper conversion when libsodium bindings support it
+        // Simplified: return as-is. In production, use proper Ed25519->X25519 conversion.
         return ed25519Public
     }
 
     private fun hkdfDerive(inputKeyMaterial: ByteArray): ByteArray {
-        // Simplified HKDF: SHA-256 of input key material with info string
-        // In production, use proper HKDF-SHA256 (extract + expand)
         val info = "X3DH-SharedSecret".encodeToByteArray()
         return sha256(inputKeyMaterial + info)
     }
