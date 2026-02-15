@@ -7,6 +7,7 @@ import com.telegrammer.shared.repository.ChatRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class ConversationListViewModel(
     private val chatRepo: ChatRepository
@@ -17,6 +18,9 @@ class ConversationListViewModel(
 
     init {
         chatRepo.connect()
+        viewModelScope.launch {
+            chatRepo.syncConversations()
+        }
     }
 
     override fun onCleared() {

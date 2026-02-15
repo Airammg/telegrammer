@@ -1,11 +1,14 @@
 package com.telegrammer.shared.repository
 
+import com.telegrammer.shared.api.ChatApi
+import com.telegrammer.shared.api.UserApi
 import com.telegrammer.shared.crypto.CryptoSession
 import com.telegrammer.shared.db.ConversationDb
 import com.telegrammer.shared.db.MessageDb
 import com.telegrammer.shared.model.Conversation
 import com.telegrammer.shared.model.Message
 import com.telegrammer.shared.model.MessageStatus
+import com.telegrammer.shared.model.User
 import com.telegrammer.shared.ws.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +28,9 @@ class ChatRepository(
     private val messageDb: MessageDb,
     private val conversationDb: ConversationDb,
     private val currentUserId: () -> String?,
-    private val json: Json
+    private val json: Json,
+    private val chatApi: ChatApi,
+    private val userApi: UserApi
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -97,6 +102,9 @@ class ChatRepository(
     suspend fun sendMessage(chatId: String, recipientId: String, text: String): Message {
         val localId = Uuid.random().toString()
 
+        // Ensure conversation exists in local DB
+        createOrGetConversation(chatId, recipientId)
+
         // Encrypt
         val (ciphertext, iv) = cryptoSession.encrypt(recipientId, text)
 
@@ -124,6 +132,45 @@ class ChatRepository(
 
     fun getConversations(): Flow<List<Conversation>> =
         conversationDb.allConversations()
+
+    suspend fun syncConversations() {
+        val myId = currentUserId() ?: return
+        val chats = chatApi.getChats().getOrNull() ?: return
+        for (chat in chats) {
+            val existing = conversationDb.getById(chat.id)
+            if (existing != null) continue
+            val otherId = chat.participants.firstOrNull { it != myId } ?: continue
+            val otherUser = userApi.getUser(otherId).getOrNull()
+            conversationDb.upsert(
+                Conversation(
+                    id = chat.id,
+                    participantIds = chat.participants,
+                    lastMessageAt = chat.lastMessageAt,
+                    createdAt = chat.createdAt,
+                    otherUser = otherUser ?: User(id = otherId, phoneNumber = "", displayName = ""),
+                    lastMessagePreview = null,
+                    unreadCount = 0
+                )
+            )
+        }
+    }
+
+    suspend fun createOrGetConversation(chatId: String, recipientId: String) {
+        val existing = conversationDb.getById(chatId)
+        if (existing != null) return
+        val otherUser = userApi.getUser(recipientId).getOrNull()
+        conversationDb.upsert(
+            Conversation(
+                id = chatId,
+                participantIds = listOf(currentUserId() ?: "", recipientId),
+                lastMessageAt = null,
+                createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+                otherUser = otherUser ?: User(id = recipientId, phoneNumber = "", displayName = ""),
+                lastMessagePreview = null,
+                unreadCount = 0
+            )
+        )
+    }
 
     suspend fun sendTyping(chatId: String) {
         val userId = currentUserId() ?: return

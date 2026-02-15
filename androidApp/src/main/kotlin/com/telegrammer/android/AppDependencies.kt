@@ -6,6 +6,7 @@ import com.telegrammer.shared.api.AuthApi
 import com.telegrammer.shared.api.ChatApi
 import com.telegrammer.shared.api.ContactApi
 import com.telegrammer.shared.api.KeyApi
+import com.telegrammer.shared.api.UserApi
 import com.telegrammer.shared.crypto.CryptoSession
 import com.telegrammer.shared.crypto.KeyManager
 import com.telegrammer.shared.db.ConversationDb
@@ -30,6 +31,7 @@ class AppDependencies(context: Context) {
     val contactApi = ContactApi(apiClient.http)
     val keyApi = KeyApi(apiClient.http)
     val chatApi = ChatApi(apiClient.http)
+    val userApi = UserApi(apiClient.http)
 
     // Crypto
     val keyManager = KeyManager(secureStorage)
@@ -50,7 +52,9 @@ class AppDependencies(context: Context) {
         messageDb = messageDb,
         conversationDb = conversationDb,
         currentUserId = { authRepo.getUserId() },
-        json = apiClient.json
+        json = apiClient.json,
+        chatApi = chatApi,
+        userApi = userApi
     )
     val contactRepo = ContactRepository(contactApi)
 }
