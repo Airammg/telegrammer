@@ -3,6 +3,7 @@ package com.telegrammer.shared.crypto
 import com.ionspin.kotlin.crypto.aead.AuthenticatedEncryptionWithAssociatedData
 import com.ionspin.kotlin.crypto.box.Box
 import com.ionspin.kotlin.crypto.scalarmult.ScalarMultiplication
+import kotlinx.serialization.Serializable
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -24,6 +25,7 @@ class Ratchet {
         var recvMessageNumber: Int = 0
     )
 
+    @Serializable
     data class MessageHeader(
         val ratchetPublicKey: String, // Base64
         val messageNumber: Int,

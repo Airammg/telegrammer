@@ -1,13 +1,17 @@
 package com.telegrammer.shared.repository
 
 import com.telegrammer.shared.api.AuthApi
+import com.telegrammer.shared.api.KeyApi
+import com.telegrammer.shared.crypto.KeyManager
 import com.telegrammer.shared.model.AuthState
 import com.telegrammer.shared.platform.SecureStorage
 import com.telegrammer.shared.platform.StorageKeys
 
 class AuthRepository(
     private val authApi: AuthApi,
-    private val storage: SecureStorage
+    private val storage: SecureStorage,
+    private val keyManager: KeyManager,
+    private val keyApi: KeyApi
 ) {
     fun isLoggedIn(): Boolean =
         storage.getString(StorageKeys.ACCESS_TOKEN) != null
@@ -34,6 +38,16 @@ class AuthRepository(
                 storage.putString(StorageKeys.ACCESS_TOKEN, tokens.accessToken)
                 storage.putString(StorageKeys.REFRESH_TOKEN, tokens.refreshToken)
                 storage.putString(StorageKeys.USER_ID, tokens.userId)
+
+                // Generate E2E keys and upload bundle after login
+                try {
+                    keyManager.initialize()
+                    val bundle = keyManager.generateUploadBundle()
+                    keyApi.uploadBundle(bundle)
+                } catch (_: Exception) {
+                    // Key upload failed — will retry on next app launch
+                }
+
                 AuthState.Authenticated(tokens.userId)
             },
             onFailure = { e ->

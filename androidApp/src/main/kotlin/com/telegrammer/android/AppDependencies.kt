@@ -43,7 +43,7 @@ class AppDependencies(context: Context) {
     val conversationDb = ConversationDb(database)
 
     // Repositories
-    val authRepo = AuthRepository(authApi, secureStorage)
+    val authRepo = AuthRepository(authApi, secureStorage, keyManager, keyApi)
     val chatRepo = ChatRepository(
         chatSocket = chatSocket,
         cryptoSession = cryptoSession,
