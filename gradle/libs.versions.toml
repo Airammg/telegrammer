@@ -5,6 +5,7 @@ kotlinx-serialization = "1.7.3"
 logback = "1.5.12"
 mongodb = "5.2.1"
 java-jwt = "4.4.0"
+twilio = "10.6.4"
 agp = "8.7.3"
 compose-bom = "2024.12.01"
 compose-compiler = "1.5.15"
@@ -70,6 +71,9 @@ sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", 
 
 # Crypto
 libsodium = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodium" }
+
+# SMS
+twilio = { module = "com.twilio.sdk:twilio", version.ref = "twilio" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

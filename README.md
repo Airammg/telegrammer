@@ -51,7 +51,15 @@ docker compose up -d
 
 Server runs at `http://localhost:8080`. Health check: `GET /health`.
 
-OTP codes are printed to the server console (dev mode — no real SMS).
+OTP codes are printed to the server console by default. To use Twilio for real SMS:
+
+```bash
+export SMS_PROVIDER=twilio
+export TWILIO_ACCOUNT_SID=your_sid
+export TWILIO_AUTH_TOKEN=your_token
+export TWILIO_FROM_NUMBER=+1234567890
+./gradlew :server:run
+```
 
 ### 3. Build & Run Android App
 
@@ -119,7 +127,7 @@ Messages use `{ "type": "...", "payload": {...} }` envelope format.
 - Conversation list: syncs from server, updates on sent messages
 
 ### In Progress
-- Delivery/read receipts UI
+- Profile editing UI
 
 ## Roadmap
 
@@ -131,8 +139,8 @@ Messages use `{ "type": "...", "payload": {...} }` envelope format.
 | 4 | Wire up full encrypt/send flow | Done |
 | 5 | Test end-to-end encrypted messaging | Done |
 | 6 | Conversation list real-time refresh | Done |
-| 7 | Delivery/read receipts UI (check marks) | **Next** |
-| 8 | Real SMS integration (Twilio) | Pending |
-| 9 | Profile editing UI | Pending |
+| 7 | Delivery/read receipts UI (check marks) | Done |
+| 8 | Real SMS integration (Twilio) | Done |
+| 9 | Profile editing UI | **Next** |
 | 10 | iOS app | Pending |
 | 11 | Docker production deployment | Pending |

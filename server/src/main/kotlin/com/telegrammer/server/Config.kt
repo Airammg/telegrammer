@@ -22,7 +22,10 @@ data class JwtConfig(
 )
 
 data class SmsConfig(
-    val provider: String
+    val provider: String,
+    val twilioAccountSid: String = "",
+    val twilioAuthToken: String = "",
+    val twilioFromNumber: String = ""
 )
 
 fun Application.loadConfig(): AppConfig {
@@ -40,7 +43,10 @@ fun Application.loadConfig(): AppConfig {
             refreshTokenExpireDays = config.property("app.jwt.refreshTokenExpireDays").getString().toLong()
         ),
         sms = SmsConfig(
-            provider = config.property("app.sms.provider").getString()
+            provider = config.property("app.sms.provider").getString(),
+            twilioAccountSid = config.propertyOrNull("app.sms.twilio.accountSid")?.getString() ?: "",
+            twilioAuthToken = config.propertyOrNull("app.sms.twilio.authToken")?.getString() ?: "",
+            twilioFromNumber = config.propertyOrNull("app.sms.twilio.fromNumber")?.getString() ?: ""
         )
     )
 }

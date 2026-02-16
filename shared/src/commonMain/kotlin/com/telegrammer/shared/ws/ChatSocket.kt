@@ -14,7 +14,7 @@ class ChatSocket(
     private val client: HttpClient,
     private val tokenStore: SecureStorage,
     private val json: Json,
-    private val wsHost: String = "192.168.1.144",
+    private val wsHost: String = "192.168.1.129",
     private val wsPort: Int = 8080
 ) {
     private var session: WebSocketSession? = null

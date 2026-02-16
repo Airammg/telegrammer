@@ -47,7 +47,7 @@ Server IP is hardcoded in two files (update when network changes):
 
 ## Implementation Roadmap
 
-Steps 1-6 complete. Next up: step 7.
+Steps 1-8 complete. Next up: step 9.
 
 ### Step 1 — Initialize libsodium on app startup — DONE
 `LibsodiumInitializer.initialize()` called in `TelegrammerApp.onCreate()`.
@@ -67,13 +67,13 @@ Encrypted messages sent successfully from phone to test user. Send-side verified
 ### Step 6 — Conversation list refresh — DONE
 Added `syncConversations()` to `ChatRepository` — fetches chats from server, resolves user info via `UserApi`, upserts into local DB. `sendMessage()` now calls `createOrGetConversation()` to ensure the row exists before updating. `ConversationListViewModel` syncs on init.
 
-### Step 7 — Delivery/read receipts UI (NEXT)
-Show check marks on messages (single = sent, double = delivered, blue = read).
+### Step 7 — Delivery/read receipts UI — DONE
+Check marks on messages: single = sent, double = delivered, blue double = read. `localId` field added to WsSendMessage/WsMessageAck to match server acks to local messages (UUID vs MongoDB ObjectId). Blue color `#34B7F1` for read status.
 
-### Step 8 — Real SMS integration
-Replace `ConsoleSmsGateway` with a real SMS provider (e.g. Twilio). The `SmsGateway` interface is already in place — just needs a new implementation.
+### Step 8 — Real SMS integration (Twilio) — DONE
+Added `TwilioSmsGateway` alongside `ConsoleSmsGateway`. Config selects gateway via `app.sms.provider` ("twilio" or "console"). Twilio credentials via env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`. Set `SMS_PROVIDER=twilio` to activate.
 
-### Step 9 — Profile editing UI
+### Step 9 — Profile editing UI (NEXT)
 Add screen to edit display name and avatar.
 
 ### Step 10 — iOS app

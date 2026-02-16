@@ -30,6 +30,7 @@ dependencies {
     implementation(libs.bson.kotlinx)
     implementation(libs.java.jwt)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.twilio)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {

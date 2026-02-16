@@ -46,7 +46,14 @@ fun Application.module() {
     // Services
     val jwtService = JwtService(config.jwt)
     val otpService = OtpService()
-    val smsGateway: SmsGateway = ConsoleSmsGateway()
+    val smsGateway: SmsGateway = when (config.sms.provider) {
+        "twilio" -> TwilioSmsGateway(
+            accountSid = config.sms.twilioAccountSid,
+            authToken = config.sms.twilioAuthToken,
+            fromNumber = config.sms.twilioFromNumber
+        )
+        else -> ConsoleSmsGateway()
+    }
     val userRepository = UserRepository()
     val chatRepository = ChatRepository()
     val messageRepository = MessageRepository()
