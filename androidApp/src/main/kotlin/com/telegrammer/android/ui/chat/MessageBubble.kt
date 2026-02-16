@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.telegrammer.shared.model.Message
@@ -71,10 +72,9 @@ fun MessageBubble(message: Message) {
                             MessageStatus.DELIVERED, MessageStatus.READ -> Icons.Default.DoneAll
                             MessageStatus.FAILED -> Icons.Default.Schedule
                         }
-                        val tint = if (message.status == MessageStatus.READ) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            textColor.copy(alpha = 0.7f)
+                        val tint = when (message.status) {
+                            MessageStatus.READ -> Color(0xFF34B7F1) // Blue check marks
+                            else -> textColor.copy(alpha = 0.7f)
                         }
                         Icon(
                             imageVector = icon,

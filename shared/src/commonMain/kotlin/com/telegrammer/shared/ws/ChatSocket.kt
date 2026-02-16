@@ -76,8 +76,8 @@ class ChatSocket(
         session?.send(Frame.Text(json.encodeToString(envelope)))
     }
 
-    suspend fun sendMessage(chatId: String, recipientId: String, ciphertext: String, iv: String) {
-        val payload = WsSendMessage(chatId, recipientId, ciphertext, iv)
+    suspend fun sendMessage(chatId: String, recipientId: String, ciphertext: String, iv: String, localId: String = "") {
+        val payload = WsSendMessage(chatId, recipientId, ciphertext, iv, localId)
         val envelope = WsEnvelope(
             type = "message.send",
             payload = json.encodeToJsonElement(WsSendMessage.serializer(), payload)

@@ -14,14 +14,16 @@ data class WsSendMessage(
     val chatId: String,
     val recipientId: String,
     val ciphertext: String,
-    val iv: String
+    val iv: String,
+    val localId: String = ""
 )
 
 @Serializable
 data class WsMessageAck(
     val messageId: String,
     val chatId: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val localId: String = ""
 )
 
 @Serializable

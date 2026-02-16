@@ -87,7 +87,9 @@ class ChatRepository(
     }
 
     private fun handleAck(ack: WsMessageAck) {
-        messageDb.updateStatus(ack.messageId, MessageStatus.SENT)
+        // Use localId to find the message (local DB stores UUID, server returns ObjectId)
+        val id = ack.localId.ifEmpty { ack.messageId }
+        messageDb.updateStatus(id, MessageStatus.SENT)
     }
 
     private fun handleDelivered(receipt: WsDeliveryReceipt) {
@@ -122,7 +124,7 @@ class ChatRepository(
         conversationDb.updateLastMessage(chatId, message.timestamp, text.take(100))
 
         // Send via WebSocket
-        chatSocket.sendMessage(chatId, recipientId, ciphertext, iv)
+        chatSocket.sendMessage(chatId, recipientId, ciphertext, iv, localId)
 
         return message
     }

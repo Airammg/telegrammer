@@ -45,7 +45,8 @@ class WsHandler(
                 WsMessageAck(
                     messageId = stored.id.toHexString(),
                     chatId = msg.chatId,
-                    timestamp = stored.timestamp
+                    timestamp = stored.timestamp,
+                    localId = msg.localId
                 )
             )
         )
