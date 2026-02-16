@@ -4,6 +4,39 @@
 
 Telegrammer is a Telegram-like 1-on-1 encrypted chat app. Ktor server + KMP shared module + Android Compose UI + iOS SwiftUI.
 
+## Principles
+
+### No third-party libraries
+Use only platform/framework essentials. Do NOT add libraries for things that can be done with standard APIs or simple custom code. Acceptable dependencies are:
+- **Framework:** Ktor (server + client), Jetpack Compose, SwiftUI — these ARE the platform
+- **Kotlin ecosystem:** KotlinX Serialization, KotlinX Coroutines, KotlinX DateTime — official Kotlin libraries
+- **Database:** MongoDB driver (server), SQLDelight (client) — direct database access, no ORMs on top
+- **Crypto:** libsodium bindings — required for E2E encryption primitives (no pure-Kotlin alternative)
+- **Logging:** Logback (server only) — SLF4J standard
+
+Do NOT add: DI frameworks (Koin, Hilt, Dagger), HTTP wrappers on top of Ktor, image loading libraries, analytics SDKs, crash reporters, UI component libraries, state management libraries (Redux, MVI), testing frameworks beyond what Kotlin/Swift provide. If a problem can be solved in <50 lines of custom code, write it yourself.
+
+For iOS: zero Swift dependencies. Everything comes through the KMP shared framework. No CocoaPods, no SPM packages.
+
+### No hardcoded config
+All environment-specific values (hosts, ports, secrets, feature flags) must come from configuration, never from source code literals.
+- **Server:** HOCON `application.conf` with `${?ENV_VAR}` overrides (already done)
+- **Android:** `BuildConfig` fields generated from `build.gradle.kts`, reading from `local.properties` or env vars
+- **iOS:** A `Config.xcconfig` file (not committed) referenced in the Xcode build, exposed via Info.plist keys
+- **Shared KMP module:** Constructor parameters with NO default values for hosts/ports — force callers to supply config explicitly
+
+Current violations to fix:
+- `ApiClient.kt` has `apiHost = "192.168.1.129"` as default — remove default, make it a required param
+- `ChatSocket.kt` has `wsHost = "192.168.1.129"` as default — remove default, make it a required param
+- `iosApp/AppDependencies.swift` has IPs inline — read from Info.plist / xcconfig instead
+
+### Best practices
+- **Validate at boundaries only** — trust internal code, validate user input and external API responses
+- **No premature abstraction** — three similar lines > one premature helper
+- **Config via environment** — secrets and hosts never in source code, use env vars / config files
+- **Fail fast in dev, gracefully in prod** — clear error messages, no silent swallowing of important errors
+- **Minimal surface area** — each class/function does one thing, public API is as small as possible
+
 ## Build & Run
 
 ```bash
@@ -13,7 +46,7 @@ cd server && docker compose up -d
 # Run server (JDK 17 required)
 ./gradlew :server:run
 
-# Build Android APK
+# Build Android APK (set SERVER_HOST in local.properties or env)
 ./gradlew :androidApp:assembleDebug
 
 # Build iOS (requires Xcode.app)
@@ -32,7 +65,7 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator 
   - `ws/` — WebSocket client (ChatSocket, WsMessage types)
   - `repository/` — Data layer (AuthRepository, ChatRepository, ContactRepository)
   - `db/` — SQLDelight DAOs (MessageDb, ConversationDb)
-  - `platform/` — expect/actual (SecureStorage, DriverFactory)
+  - `platform/` — expect/actual (SecureStorage, DriverFactory, FlowWrapper)
 - `androidApp/src/main/kotlin/com/telegrammer/android/` — Android UI
   - `navigation/NavGraph.kt` — All navigation routes
   - `AppDependencies.kt` — Manual DI wiring
@@ -51,47 +84,39 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator 
 - **Server stores only ciphertext** — E2E encrypted, never sees plaintext
 - Dependencies exposed from shared to androidApp via `api()` not `implementation()`
 
-## Network Config
+## Configuration
 
-Server IP is hardcoded in three files (update when network changes):
-- `shared/.../api/ApiClient.kt` — `apiHost` parameter
-- `shared/.../ws/ChatSocket.kt` — `wsHost` parameter
-- `iosApp/iosApp/AppDependencies.swift` — `apiHost` and `wsHost` parameters
+### Server (`server/src/main/resources/application.conf`)
+HOCON format. Every value has a dev default + env var override:
+- `PORT` — server port (default 8080)
+- `MONGODB_URI` — MongoDB connection string
+- `JWT_SECRET` — JWT signing secret (**must override in production**)
+- `SMS_PROVIDER` — "console" or "twilio"
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — Twilio credentials
+
+### Android (`androidApp/build.gradle.kts` → `BuildConfig`)
+Server host/port injected at build time via `BuildConfig` fields. Source: `local.properties` or env vars.
+
+### iOS (`iosApp/Config.xcconfig` → Info.plist)
+Server host/port in xcconfig file (git-ignored), read at runtime from `Bundle.main.infoDictionary`.
+
+### Shared module
+`ApiClient` and `ChatSocket` take host/port as **required** constructor parameters (no defaults). Each platform's `AppDependencies` supplies the values from its own config mechanism.
 
 ## Implementation Roadmap
 
 Steps 1-10 complete. Next up: step 11.
 
 ### Step 1 — Initialize libsodium on app startup — DONE
-`LibsodiumInitializer.initialize()` called in `TelegrammerApp.onCreate()`.
-
 ### Step 2 — Generate identity keys on registration — DONE
-After OTP verification, `AuthRepository.verifyOtp()` generates identity key pair, signed prekey, and one-time prekeys via `KeyManager`. Also generates on app startup if logged in but no keys exist.
-
 ### Step 3 — Upload prekey bundle to server — DONE
-Bundle uploaded via `POST /keys/bundle` after key generation. Test user bundle uploaded via pynacl script.
-
 ### Step 4 — Wire up the full encrypt/send flow — DONE
-`CryptoSession.encrypt()` fetches recipient's bundle, does X3DH, initializes Double Ratchet, encrypts with XChaCha20-Poly1305. Fixed `@Serializable` on `MessageHeader`. Added error handling in `ChatViewModel`.
-
 ### Step 5 — Test end-to-end messaging — DONE
-Encrypted messages sent successfully from phone to test user. Send-side verified working.
-
 ### Step 6 — Conversation list refresh — DONE
-Added `syncConversations()` to `ChatRepository` — fetches chats from server, resolves user info via `UserApi`, upserts into local DB. `sendMessage()` now calls `createOrGetConversation()` to ensure the row exists before updating. `ConversationListViewModel` syncs on init.
-
 ### Step 7 — Delivery/read receipts UI — DONE
-Check marks on messages: single = sent, double = delivered, blue double = read. `localId` field added to WsSendMessage/WsMessageAck to match server acks to local messages (UUID vs MongoDB ObjectId). Blue color `#34B7F1` for read status.
-
 ### Step 8 — Real SMS integration (Twilio) — DONE
-Added `TwilioSmsGateway` alongside `ConsoleSmsGateway`. Config selects gateway via `app.sms.provider` ("twilio" or "console"). Twilio credentials via env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`. Set `SMS_PROVIDER=twilio` to activate.
-
 ### Step 9 — Profile editing UI — DONE
-Added `updateProfile()` to `UserApi` calling `PUT /users/me`. New `ProfileEditScreen` with initials avatar, read-only phone number, editable display name, and save button. Person icon in ConversationListScreen top bar navigates to profile edit. Auto-navigates back on save.
-
 ### Step 10 — iOS app — DONE
-SwiftUI app (iOS 16+) built on KMP shared module. Added `FlowWrapper<T>` bridge in shared module for Flow→Swift observation, plus `getMessagesWrapped()`, `getConversationsWrapped()`, `contactsWrapped()` methods. Fixed iOS `SecureStorage` missing CoreFoundation imports. All 6 screens: phone input, OTP verification, conversation list, chat with message bubbles and delivery status icons, contacts search, profile editing. Manual DI via `AppDependencies.swift` mirroring Android pattern. xcodegen `project.yml` for reproducible project generation. NSAppTransportSecurity allows cleartext for dev. **Note:** Requires Xcode.app (not just CLI tools) to build the shared framework and compile.
-
 ### Step 11 — Docker production deployment
 Containerize server + MongoDB with proper config, TLS, and environment variables.
 
