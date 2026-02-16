@@ -20,13 +20,16 @@ import com.telegrammer.shared.repository.ContactRepository
 import com.telegrammer.shared.ws.ChatSocket
 
 class AppDependencies(context: Context) {
+    private val serverHost = BuildConfig.SERVER_HOST
+    private val serverPort = BuildConfig.SERVER_PORT
+
     // Platform
     val secureStorage = SecureStorage(context)
     private val sqlDriver = DriverFactory(context).create()
     val database = TelegrammerDatabase(sqlDriver)
 
     // Network
-    val apiClient = ApiClient(tokenStore = secureStorage)
+    val apiClient = ApiClient(tokenStore = secureStorage, apiHost = serverHost, apiPort = serverPort)
     val authApi = AuthApi(apiClient.http)
     val contactApi = ContactApi(apiClient.http)
     val keyApi = KeyApi(apiClient.http)
@@ -38,7 +41,7 @@ class AppDependencies(context: Context) {
     val cryptoSession = CryptoSession(keyManager, keyApi, secureStorage)
 
     // WebSocket
-    val chatSocket = ChatSocket(apiClient.http, secureStorage, apiClient.json)
+    val chatSocket = ChatSocket(apiClient.http, secureStorage, apiClient.json, serverHost, serverPort)
 
     // DB
     val messageDb = MessageDb(database)

@@ -73,7 +73,13 @@ fun NavGraph(deps: AppDependencies) {
                     navController.navigate(Routes.chat(chatId, recipientId))
                 },
                 onNewChat = { navController.navigate(Routes.CONTACTS) },
-                onProfileClick = { navController.navigate(Routes.PROFILE_EDIT) }
+                onProfileClick = { navController.navigate(Routes.PROFILE_EDIT) },
+                onLogout = {
+                    deps.authRepo.logout()
+                    navController.navigate(Routes.PHONE_INPUT) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 

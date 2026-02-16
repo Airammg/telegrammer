@@ -71,9 +71,8 @@ struct OtpView: View {
             }
             isLoading = false
             if state is AuthStateAuthenticated {
-                // Reset nav stack to conversations
+                deps.isLoggedIn = true
                 path = NavigationPath()
-                path.append(Route.conversations)
             } else if let err = state as? AuthStateError {
                 error = err.message
             }

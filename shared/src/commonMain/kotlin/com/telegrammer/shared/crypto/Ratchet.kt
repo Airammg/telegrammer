@@ -26,10 +26,18 @@ class Ratchet {
     )
 
     @Serializable
+    data class X3DHHeader(
+        val identityKey: String,      // Alice's identity public key (Base64)
+        val ephemeralKey: String,      // Alice's ephemeral public key (Base64)
+        val oneTimePreKeyId: Int? = null // Bob's one-time prekey ID used
+    )
+
+    @Serializable
     data class MessageHeader(
         val ratchetPublicKey: String, // Base64
         val messageNumber: Int,
-        val previousChainLength: Int
+        val previousChainLength: Int,
+        val x3dh: X3DHHeader? = null  // Present only in the first message of a session
     )
 
     data class EncryptedMessage(

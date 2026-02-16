@@ -111,18 +111,11 @@ class X3DH(private val keyManager: KeyManager) {
             publicKey.toUByteArray()
         ).toByteArray()
 
-    private fun ed25519PrivateToX25519(ed25519Private: ByteArray): ByteArray {
-        // Clamp the first 32 bytes of the Ed25519 secret key to produce an X25519 scalar
-        val scalar = ed25519Private.copyOfRange(0, 32)
-        scalar[0] = (scalar[0].toInt() and 248).toByte()
-        scalar[31] = (scalar[31].toInt() and 127 or 64).toByte()
-        return scalar
-    }
+    private fun ed25519PrivateToX25519(ed25519Private: ByteArray): ByteArray =
+        Signature.ed25519SkToCurve25519(ed25519Private.toUByteArray()).toByteArray()
 
-    private fun ed25519PublicToX25519(ed25519Public: ByteArray): ByteArray {
-        // Simplified: return as-is. In production, use proper Ed25519->X25519 conversion.
-        return ed25519Public
-    }
+    private fun ed25519PublicToX25519(ed25519Public: ByteArray): ByteArray =
+        Signature.ed25519PkToCurve25519(ed25519Public.toUByteArray()).toByteArray()
 
     private fun hkdfDerive(inputKeyMaterial: ByteArray): ByteArray {
         val info = "X3DH-SharedSecret".encodeToByteArray()

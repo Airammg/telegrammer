@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,7 +27,8 @@ fun ConversationListScreen(
     viewModel: ConversationListViewModel,
     onConversationClick: (chatId: String, recipientId: String) -> Unit,
     onNewChat: () -> Unit,
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val conversations by viewModel.conversations.collectAsState()
 
@@ -39,6 +41,13 @@ fun ConversationListScreen(
                         Icon(
                             Icons.Default.Person,
                             contentDescription = "Edit profile",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }

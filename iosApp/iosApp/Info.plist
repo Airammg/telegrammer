@@ -38,5 +38,9 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>ServerHost</key>
+	<string>$(SERVER_HOST)</string>
+	<key>ServerPort</key>
+	<string>$(SERVER_PORT)</string>
 </dict>
 </plist>

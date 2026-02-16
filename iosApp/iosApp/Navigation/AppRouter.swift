@@ -14,7 +14,7 @@ struct AppRouter: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            if deps.authRepo.isLoggedIn() {
+            if deps.isLoggedIn {
                 ConversationListView(path: $path)
                     .navigationDestination(for: Route.self) { route in
                         destination(for: route)

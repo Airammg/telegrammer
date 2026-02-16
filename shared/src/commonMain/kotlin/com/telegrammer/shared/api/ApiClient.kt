@@ -13,8 +13,8 @@ import kotlinx.serialization.json.Json
 
 class ApiClient(
     private val tokenStore: SecureStorage,
-    private val apiHost: String = "192.168.1.129",
-    private val apiPort: Int = 8080
+    private val apiHost: String,
+    private val apiPort: Int
 ) {
     val json = Json {
         ignoreUnknownKeys = true

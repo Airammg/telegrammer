@@ -74,6 +74,7 @@ class CryptoSession(
      */
     suspend fun encrypt(recipientId: String, plaintext: String): Pair<String, String> {
         var state = loadSession(recipientId)
+        var x3dhHeader: Ratchet.X3DHHeader? = null
 
         if (state == null) {
             // Initiate X3DH session
@@ -81,13 +82,28 @@ class CryptoSession(
             val x3dhResult = x3dh.initiateSession(bundle)
             val bobSignedPreKey = Base64.decode(bundle.signedPreKey.publicKey)
             state = Ratchet.initAlice(x3dhResult.sharedSecret, bobSignedPreKey)
+
+            // Include X3DH metadata so Bob can derive the same shared secret
+            x3dhHeader = Ratchet.X3DHHeader(
+                identityKey = Base64.encode(keyManager.getIdentityPublicKey()),
+                ephemeralKey = Base64.encode(x3dhResult.ephemeralPublicKey),
+                oneTimePreKeyId = x3dhResult.usedOneTimePreKeyId
+            )
         }
 
         val encrypted = Ratchet.encrypt(state, plaintext.encodeToByteArray())
+
+        // Attach X3DH header to the first message only
+        val header = if (x3dhHeader != null) {
+            encrypted.header.copy(x3dh = x3dhHeader)
+        } else {
+            encrypted.header
+        }
+
         saveSession(recipientId, state)
 
         // Combine header + ciphertext into ciphertext field, nonce goes to iv
-        val headerJson = json.encodeToString(encrypted.header)
+        val headerJson = json.encodeToString(header)
         val combined = Base64.encode(headerJson.encodeToByteArray()) + "." + encrypted.ciphertext
 
         return combined to encrypted.nonce
@@ -105,14 +121,18 @@ class CryptoSession(
         var state = loadSession(senderId)
 
         if (state == null) {
-            // Bob receiving first message — need to set up from X3DH
-            // The header contains Alice's ratchet key, which combined with our keys gives us the session
+            // Bob receiving first message — use X3DH metadata from header to derive shared secret
+            val x3dhMeta = header.x3dh
+                ?: throw IllegalStateException("First message from $senderId missing X3DH header")
+
+            val aliceIdentityKey = Base64.decode(x3dhMeta.identityKey)
+            val aliceEphemeralKey = Base64.decode(x3dhMeta.ephemeralKey)
+            val sharedSecret = x3dh.respondToSession(aliceIdentityKey, aliceEphemeralKey, x3dhMeta.oneTimePreKeyId)
+
             val bobSignedPrivate = keyManager.getSignedPreKeyPrivate()
             val bobSignedPublic = keyManager.getSignedPreKeyPublic()
-            // For the initial message, we use a placeholder shared secret
-            // In a full implementation, the initial message would include X3DH metadata
             state = Ratchet.initBob(
-                sharedSecret = sha256(bobSignedPrivate + Base64.decode(header.ratchetPublicKey)),
+                sharedSecret = sharedSecret,
                 bobRatchetKeyPair = bobSignedPrivate to bobSignedPublic
             )
         }

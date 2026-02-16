@@ -57,11 +57,19 @@ struct ConversationListView: View {
         .navigationTitle("Telegrammer")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    path.append(Route.profileEdit)
-                } label: {
-                    Image(systemName: "person.circle")
-                        .font(.title3)
+                HStack(spacing: 8) {
+                    Button {
+                        path.append(Route.profileEdit)
+                    } label: {
+                        Image(systemName: "person.circle")
+                            .font(.title3)
+                    }
+                    Button {
+                        deps.logout()
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.title3)
+                    }
                 }
             }
         }

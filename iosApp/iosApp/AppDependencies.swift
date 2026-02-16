@@ -1,6 +1,8 @@
 import shared
 
 class AppDependencies: ObservableObject {
+    @Published var isLoggedIn: Bool = false
+
     // Platform
     let secureStorage = SecureStorage()
     let database: TelegrammerDatabase
@@ -29,11 +31,18 @@ class AppDependencies: ObservableObject {
     let chatRepo: ChatRepository
     let contactRepo: ContactRepository
 
+    private static func infoString(_ key: String) -> String {
+        Bundle.main.infoDictionary?[key] as? String ?? ""
+    }
+
     init() {
+        let serverHost = Self.infoString("ServerHost")
+        let serverPort = Int32(Self.infoString("ServerPort")) ?? 8080
+
         let sqlDriver = DriverFactory().create()
         database = TelegrammerDatabase(driver: sqlDriver)
 
-        apiClient = ApiClient(tokenStore: secureStorage, apiHost: "192.168.1.129", apiPort: 8080)
+        apiClient = ApiClient(tokenStore: secureStorage, apiHost: serverHost, apiPort: serverPort)
         authApi = AuthApi(client: apiClient.http)
         contactApi = ContactApi(client: apiClient.http)
         keyApi = KeyApi(client: apiClient.http)
@@ -43,7 +52,7 @@ class AppDependencies: ObservableObject {
         keyManager = KeyManager(storage: secureStorage)
         cryptoSession = CryptoSession(keyManager: keyManager, keyApi: keyApi, storage: secureStorage)
 
-        chatSocket = ChatSocket(client: apiClient.http, tokenStore: secureStorage, json: apiClient.json, wsHost: "192.168.1.129", wsPort: 8080)
+        chatSocket = ChatSocket(client: apiClient.http, tokenStore: secureStorage, json: apiClient.json, wsHost: serverHost, wsPort: serverPort)
 
         messageDb = MessageDb(database: database)
         conversationDb = ConversationDb(database: database)
@@ -60,6 +69,14 @@ class AppDependencies: ObservableObject {
             userApi: userApi
         )
         contactRepo = ContactRepository(contactApi: contactApi)
+
+        isLoggedIn = authRepo.isLoggedIn()
+    }
+
+    func logout() {
+        chatRepo.disconnect()
+        authRepo.logout()
+        isLoggedIn = false
     }
 
     func initializeCrypto() async {
