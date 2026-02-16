@@ -47,7 +47,7 @@ Server IP is hardcoded in two files (update when network changes):
 
 ## Implementation Roadmap
 
-Steps 1-8 complete. Next up: step 9.
+Steps 1-9 complete. Next up: step 10.
 
 ### Step 1 — Initialize libsodium on app startup — DONE
 `LibsodiumInitializer.initialize()` called in `TelegrammerApp.onCreate()`.
@@ -73,10 +73,10 @@ Check marks on messages: single = sent, double = delivered, blue double = read. 
 ### Step 8 — Real SMS integration (Twilio) — DONE
 Added `TwilioSmsGateway` alongside `ConsoleSmsGateway`. Config selects gateway via `app.sms.provider` ("twilio" or "console"). Twilio credentials via env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`. Set `SMS_PROVIDER=twilio` to activate.
 
-### Step 9 — Profile editing UI (NEXT)
-Add screen to edit display name and avatar.
+### Step 9 — Profile editing UI — DONE
+Added `updateProfile()` to `UserApi` calling `PUT /users/me`. New `ProfileEditScreen` with initials avatar, read-only phone number, editable display name, and save button. Person icon in ConversationListScreen top bar navigates to profile edit. Auto-navigates back on save.
 
-### Step 10 — iOS app
+### Step 10 — iOS app (NEXT)
 Build the iOS UI layer on top of the existing KMP shared module.
 
 ### Step 11 — Docker production deployment

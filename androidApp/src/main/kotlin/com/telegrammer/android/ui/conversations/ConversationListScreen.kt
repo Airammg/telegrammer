@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -24,7 +25,8 @@ import com.telegrammer.shared.model.Conversation
 fun ConversationListScreen(
     viewModel: ConversationListViewModel,
     onConversationClick: (chatId: String, recipientId: String) -> Unit,
-    onNewChat: () -> Unit
+    onNewChat: () -> Unit,
+    onProfileClick: () -> Unit = {}
 ) {
     val conversations by viewModel.conversations.collectAsState()
 
@@ -32,6 +34,15 @@ fun ConversationListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Telegrammer") },
+                actions = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Edit profile",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
