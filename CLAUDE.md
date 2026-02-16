@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Telegrammer is a Telegram-like 1-on-1 encrypted chat app. Full Kotlin stack: Ktor server + KMP shared module + Android Compose UI.
+Telegrammer is a Telegram-like 1-on-1 encrypted chat app. Ktor server + KMP shared module + Android Compose UI + iOS SwiftUI.
 
 ## Build & Run
 
@@ -15,6 +15,12 @@ cd server && docker compose up -d
 
 # Build Android APK
 ./gradlew :androidApp:assembleDebug
+
+# Build iOS (requires Xcode.app)
+cd iosApp && xcodegen generate && open iosApp.xcodeproj
+# Or from command line:
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator build
 ```
 
 ## Key Directories
@@ -30,6 +36,12 @@ cd server && docker compose up -d
 - `androidApp/src/main/kotlin/com/telegrammer/android/` — Android UI
   - `navigation/NavGraph.kt` — All navigation routes
   - `AppDependencies.kt` — Manual DI wiring
+- `iosApp/iosApp/` — iOS SwiftUI UI
+  - `Navigation/AppRouter.swift` — NavigationStack routing
+  - `AppDependencies.swift` — Manual DI wiring (mirrors Android)
+  - `Views/` — Auth, Chat, Contacts, Profile, Components
+  - `FlowObserver.swift` — FlowWrapper→@Published bridge
+  - `KMPHelpers.swift` — KMP suspend→async/await wrappers
 
 ## Architecture Decisions
 
@@ -41,13 +53,14 @@ cd server && docker compose up -d
 
 ## Network Config
 
-Server IP is hardcoded in two files (update when network changes):
+Server IP is hardcoded in three files (update when network changes):
 - `shared/.../api/ApiClient.kt` — `apiHost` parameter
 - `shared/.../ws/ChatSocket.kt` — `wsHost` parameter
+- `iosApp/iosApp/AppDependencies.swift` — `apiHost` and `wsHost` parameters
 
 ## Implementation Roadmap
 
-Steps 1-9 complete. Next up: step 10.
+Steps 1-10 complete. Next up: step 11.
 
 ### Step 1 — Initialize libsodium on app startup — DONE
 `LibsodiumInitializer.initialize()` called in `TelegrammerApp.onCreate()`.
@@ -76,8 +89,8 @@ Added `TwilioSmsGateway` alongside `ConsoleSmsGateway`. Config selects gateway v
 ### Step 9 — Profile editing UI — DONE
 Added `updateProfile()` to `UserApi` calling `PUT /users/me`. New `ProfileEditScreen` with initials avatar, read-only phone number, editable display name, and save button. Person icon in ConversationListScreen top bar navigates to profile edit. Auto-navigates back on save.
 
-### Step 10 — iOS app (NEXT)
-Build the iOS UI layer on top of the existing KMP shared module.
+### Step 10 — iOS app — DONE
+SwiftUI app (iOS 16+) built on KMP shared module. Added `FlowWrapper<T>` bridge in shared module for Flow→Swift observation, plus `getMessagesWrapped()`, `getConversationsWrapped()`, `contactsWrapped()` methods. Fixed iOS `SecureStorage` missing CoreFoundation imports. All 6 screens: phone input, OTP verification, conversation list, chat with message bubbles and delivery status icons, contacts search, profile editing. Manual DI via `AppDependencies.swift` mirroring Android pattern. xcodegen `project.yml` for reproducible project generation. NSAppTransportSecurity allows cleartext for dev. **Note:** Requires Xcode.app (not just CLI tools) to build the shared framework and compile.
 
 ### Step 11 — Docker production deployment
 Containerize server + MongoDB with proper config, TLS, and environment variables.
@@ -95,8 +108,12 @@ The test user needs a prekey bundle uploaded — use pynacl to generate Ed25519 
 
 ## Common Issues
 
-- **Gradle needs JDK 17**: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`
+- **Gradle needs JDK 17**: `export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"`
 - **APK install on phone**: Use `adb install -t` flag for debug builds
-- **Cleartext HTTP**: `android:usesCleartextTraffic="true"` is set in AndroidManifest.xml
+- **Cleartext HTTP (Android)**: `android:usesCleartextTraffic="true"` is set in AndroidManifest.xml
+- **Cleartext HTTP (iOS)**: `NSAllowsArbitraryLoads` is set in Info.plist
 - **libsodium calls**: Do not use named parameters — the bindings don't support them
 - **KMP commonMain**: No `System.currentTimeMillis()` — use `kotlinx.datetime.Clock.System`
+- **iOS build requires Xcode.app**: CLI tools alone won't work — run `xcode-select -s /Applications/Xcode.app`
+- **iOS xcodegen**: Install via `brew install xcodegen`, then `cd iosApp && xcodegen generate`
+- **KMP enums in Swift**: Exported as Obj-C classes, use `==` comparison not Swift `switch`

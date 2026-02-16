@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import com.telegrammer.shared.platform.FlowWrapper
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.uuid.ExperimentalUuidApi
@@ -132,8 +133,14 @@ class ChatRepository(
     fun getMessages(chatId: String): Flow<List<Message>> =
         messageDb.messagesForChat(chatId)
 
+    fun getMessagesWrapped(chatId: String): FlowWrapper<List<Message>> =
+        FlowWrapper(messageDb.messagesForChat(chatId))
+
     fun getConversations(): Flow<List<Conversation>> =
         conversationDb.allConversations()
+
+    fun getConversationsWrapped(): FlowWrapper<List<Conversation>> =
+        FlowWrapper(conversationDb.allConversations())
 
     suspend fun syncConversations() {
         val myId = currentUserId() ?: return
