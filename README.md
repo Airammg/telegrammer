@@ -7,6 +7,7 @@ A Telegram-like 1-on-1 encrypted chat application built with a full Kotlin stack
 - **Server** — Ktor backend with MongoDB, JWT auth, WebSocket messaging
 - **Shared** — Kotlin Multiplatform module (Android + iOS) with API clients, crypto, local DB
 - **Android App** — Jetpack Compose UI
+- **iOS App** — SwiftUI, powered by the KMP shared framework
 
 ## Tech Stack
 
@@ -15,9 +16,11 @@ A Telegram-like 1-on-1 encrypted chat application built with a full Kotlin stack
 | Backend | Ktor (Netty), MongoDB, JWT (java-jwt) |
 | Shared | KMP, Ktor Client, SQLDelight, libsodium-bindings |
 | Android | Jetpack Compose, Material3 |
+| iOS | SwiftUI |
 | Crypto | Signal Protocol (X3DH + Double Ratchet), XChaCha20-Poly1305 |
 | Auth | Phone + OTP, JWT access/refresh tokens |
 | Real-time | WebSocket with JSON envelope protocol |
+| Infra | Docker Compose, nginx, Let's Encrypt TLS |
 
 ## Project Structure
 
@@ -26,13 +29,15 @@ telegrammer/
   server/       Ktor backend (~20 source files)
   shared/       KMP shared module (API, crypto, DB, models)
   androidApp/   Android Compose application
+  iosApp/       iOS SwiftUI application
 ```
 
 ## Prerequisites
 
 - JDK 17
-- Docker & Docker Compose (for MongoDB)
+- Docker & Docker Compose
 - Android SDK (API 35)
+- Xcode.app (iOS builds only)
 
 ## Running
 
@@ -72,12 +77,43 @@ Or from CLI:
 adb install -t androidApp/build/outputs/apk/debug/androidApp-debug.apk
 ```
 
-### 4. Network Configuration
+### 4. Build & Run iOS App
 
-The app connects to the server via local network IP. Update the IP in:
+Requires Xcode.app installed.
 
-- `shared/.../api/ApiClient.kt` — `apiHost`
-- `shared/.../ws/ChatSocket.kt` — `wsHost`
+```bash
+cd iosApp && xcodegen generate && open iosApp.xcodeproj
+```
+
+### 5. Network Configuration
+
+Set the server host in `local.properties` (Android) or `iosApp/Config.xcconfig` (iOS):
+
+```
+# local.properties
+SERVER_HOST=192.168.1.x
+SERVER_PORT=8080
+```
+
+## Production Deployment
+
+Uses `docker-compose.prod.yml` with nginx TLS termination and automatic Let's Encrypt certificate renewal.
+
+```bash
+cd server
+cp .env.example .env          # fill in MONGO_USER, MONGO_PASSWORD, JWT_SECRET, DOMAIN, etc.
+# replace DOMAIN_PLACEHOLDER in nginx/nginx.conf with your actual domain
+./init-letsencrypt.sh chat.example.com your@email.com   # first-time cert only
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Verify:
+```bash
+curl https://<domain>/health   # 200 OK
+curl http://<domain>/health    # 301 → HTTPS
+```
+
+The certbot container renews certificates automatically every 12 hours. MongoDB is on an internal Docker network with no exposed ports.
 
 ## API Overview
 
@@ -119,15 +155,13 @@ Messages use `{ "type": "...", "payload": {...} }` envelope format.
 
 ## Current Status
 
-### Working
-- Server: full REST API, WebSocket, MongoDB, JWT auth, OTP flow
-- Android: auth flow (phone + OTP), conversation list, contacts search, chat UI
-- WebSocket: real-time connection, auto-reconnect
-- E2E encryption: libsodium init, key generation, bundle upload, X3DH + Double Ratchet encrypt/send
-- Conversation list: syncs from server, updates on sent messages
+All 11 planned steps complete.
 
-### In Progress
-- Profile editing UI
+- Server: full REST API, WebSocket, MongoDB, JWT auth, OTP flow
+- Android: auth flow, conversation list, contacts search, E2E chat, profile editing
+- iOS: SwiftUI app mirroring Android, powered by KMP shared module
+- E2E encryption: X3DH + Double Ratchet + XChaCha20-Poly1305, server never sees plaintext
+- Production: Docker Compose with nginx TLS and auto-renewing Let's Encrypt certs
 
 ## Roadmap
 
@@ -141,6 +175,6 @@ Messages use `{ "type": "...", "payload": {...} }` envelope format.
 | 6 | Conversation list real-time refresh | Done |
 | 7 | Delivery/read receipts UI (check marks) | Done |
 | 8 | Real SMS integration (Twilio) | Done |
-| 9 | Profile editing UI | **Next** |
-| 10 | iOS app | Pending |
-| 11 | Docker production deployment | Pending |
+| 9 | Profile editing UI | Done |
+| 10 | iOS app | Done |
+| 11 | Docker production deployment | Done |

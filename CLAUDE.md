@@ -105,7 +105,7 @@ Server host/port in xcconfig file (git-ignored), read at runtime from `Bundle.ma
 
 ## Implementation Roadmap
 
-Steps 1-10 complete. Next up: step 11.
+All 11 steps complete.
 
 ### Step 1 — Initialize libsodium on app startup — DONE
 ### Step 2 — Generate identity keys on registration — DONE
@@ -117,8 +117,8 @@ Steps 1-10 complete. Next up: step 11.
 ### Step 8 — Real SMS integration (Twilio) — DONE
 ### Step 9 — Profile editing UI — DONE
 ### Step 10 — iOS app — DONE
-### Step 11 — Docker production deployment
-Containerize server + MongoDB with proper config, TLS, and environment variables.
+### Step 11 — Docker production deployment — DONE
+`server/docker-compose.prod.yml` — nginx TLS + Let's Encrypt + MongoDB auth + health checks.
 
 ## Testing Setup
 
